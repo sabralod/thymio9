@@ -1,16 +1,17 @@
 import iw.ur.thymio.Thymio.Thymio;
 
+import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 
-/**
- * Created by dennis on 09.05.16.
- */
 public class Program {
     private static Thymio thymio;
 
     public static void main (String[] args) {
         thymio = new Thymio(Constants.IP_THYMIO);
+
+//        aufgabe_1();
+        aufgabe_2();
 
         //Sensor Value Output (to cancel press CTRL+C in your ssh instance where ./ThymioServer is running)
 //        while(true) {
@@ -25,30 +26,25 @@ public class Program {
 //            System.out.println("Ground-Left-Sensor:     " + thymio.getGroundReflected()[Constants.GROUND_LEFT_SENSOR]);
 //            System.out.println("Ground-Right-Sensor:    " + thymio.getGroundReflected()[Constants.GROUND_RIGHT_SENSOR]);
 //        }
-
-//        aufgabe_1();
-//        aufgabe_2();
     }
 
     private static void aufgabe_2() {
         try {
-            FileWriter LeftSensor = new FileWriter("LeftSensor.csv");
-            FileWriter RightSensor = new FileWriter("RightSensor.csv");
+            FileWriter sensorData = new FileWriter("sensordata.csv");
+            sensorData.write("elapsedTime(ms), LeftSensor,RightSensor\n");
+            BufferedWriter bufferedWriter = new BufferedWriter(sensorData);
+            int speed = 300;
+            long durationInMS = 15000;
 
-            int numOfSensorValues = 8;
-            for (int i = 0; i < numOfSensorValues - 1; i++) {
-                LeftSensor.append("" + thymio.getGroundReflected()[Constants.GROUND_LEFT_SENSOR] + ",");
-                RightSensor.append("" + thymio.getGroundReflected()[Constants.GROUND_RIGHT_SENSOR] + ",");
+            thymio.drive(speed, speed);
 
-                thymio.move();
+            for (long stopTime = System.currentTimeMillis() + durationInMS; stopTime > System.currentTimeMillis();) {
+                long elapsedTime = System.currentTimeMillis() - (stopTime - durationInMS);
+                bufferedWriter.append(elapsedTime + "," + thymio.getGroundReflected()[Constants.GROUND_LEFT_SENSOR] + "," + thymio.getGroundReflected()[Constants.GROUND_RIGHT_SENSOR] + "\n");
             }
-            LeftSensor.append("" + thymio.getGroundReflected()[Constants.GROUND_LEFT_SENSOR] + ",");
-            RightSensor.append("" + thymio.getGroundReflected()[Constants.GROUND_RIGHT_SENSOR] + ",");
 
-            LeftSensor.flush();
-            RightSensor.flush();
-            LeftSensor.close();
-            RightSensor.close();
+            thymio.stop();
+            bufferedWriter.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -92,6 +88,7 @@ public class Program {
                 System.out.println("Obstacle detected! Stopped!");
                 break;
             }
+
             System.out.println("Moving to Field " + (i + 1));
             thymio.move();
         }
