@@ -1,4 +1,4 @@
-elapsedTime(ms), LeftSensor,RightSensor
+elapsedTime(ms),LeftSensor,RightSensor
 0,105,129
 85,105,128
 154,105,157

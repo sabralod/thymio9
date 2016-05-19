@@ -10,7 +10,7 @@ public class Program {
     public static void main (String[] args) {
         thymio = new Thymio(Constants.IP_THYMIO);
 
-//        aufgabe_1();
+        aufgabe_1();
         aufgabe_2();
 
         //Sensor Value Output (to cancel press CTRL+C in your ssh instance where ./ThymioServer is running)
@@ -31,7 +31,7 @@ public class Program {
     private static void aufgabe_2() {
         try {
             FileWriter sensorData = new FileWriter("sensordata.csv");
-            sensorData.write("elapsedTime(ms), LeftSensor,RightSensor\n");
+            sensorData.write("elapsedTime(ms),LeftSensor,RightSensor\n");
             BufferedWriter bufferedWriter = new BufferedWriter(sensorData);
             int speed = 300;
             long durationInMS = 15000;
