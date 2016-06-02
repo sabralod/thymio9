@@ -1,19 +1,23 @@
-import iw.ur.thymio.Map;
 import iw.ur.thymio.Thymio.Thymio;
+import iw.ur.thymio.map.Map;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by dennis on 20.05.16.
  */
 public class Main {
     //20x8 Map ist vorgegeben
-    public static final int MAP_HEIGHT = 8;
     public static final int MAP_WIDTH = 20;
+    public static final int MAP_HEIGHT = 8;
+    public static final int MAP_MINIMUM_W_H = 0;
     public static final int ORIENTATION_UP = 0;
     public static final int ORIENTATION_RIGHT = 90;
     public static final int ORIENTATION_LEFT = -90;
     public static final int ORIENTATION_DOWN = 180;
+    public static final int POSITION_INDEX_Y = 0;
+    public static final int POSITION_INDEX_X = 1;
 
     private static Thymio thymio;
     private static Map map;
@@ -27,14 +31,15 @@ public class Main {
         initMap();
 //        initThymio();
 
-//        Dijkstra dijkstra = new Dijkstra(getStartPosition(), orientation, getEndPosition(), map.getObstacles());
-//        int[] path = dijkstra.getPath();
+        Dijkstra dijkstra = new Dijkstra(getStartPosition(), orientation, getEndPosition(), map.getObstacles());
+        List<Integer> path = dijkstra.getPath();
 //        runPath(path);
     }
 
-    private static void runPath(int[] path) {
-        for (int i = 0; i < path.length; i++) {
-            switch (path[i]) {
+    private static void runPath(List<Integer> actions) {
+        //TODO console output that tells the user what actions are being taken (to document the path)
+        for (Integer action : actions) {
+            switch (action) {
                 case Dijkstra.ACTION_MOVE_FORWARD:
                     moveForward();
                     break;
@@ -94,20 +99,20 @@ public class Main {
         int[] currentPosition = getCurrentPosition();
         probs[currentPosition[0]][currentPosition[1]] = 0.0D;
         switch (orientation) {
-            case 0:
-                probs[currentPosition[0] - 1][currentPosition[1]] = 1.0D;
+            case ORIENTATION_UP:
+                probs[currentPosition[POSITION_INDEX_Y] - 1][currentPosition[POSITION_INDEX_X]] = 1.0D;
                 break;
-            case 90:
-                probs[currentPosition[0]][currentPosition[1] + 1] = 1.0D;
+            case ORIENTATION_RIGHT:
+                probs[currentPosition[POSITION_INDEX_Y]][currentPosition[POSITION_INDEX_X] + 1] = 1.0D;
                 break;
-            case -90:
-                probs[currentPosition[0]][currentPosition[1] - 1] = 1.0D;
+            case ORIENTATION_LEFT:
+                probs[currentPosition[POSITION_INDEX_Y]][currentPosition[POSITION_INDEX_X] - 1] = 1.0D;
                 break;
-            case 180:
-                probs[currentPosition[0] + 1][currentPosition[1]] = 1.0D;
+            case ORIENTATION_DOWN:
+                probs[currentPosition[POSITION_INDEX_Y] + 1][currentPosition[POSITION_INDEX_X]] = 1.0D;
                 break;
             default:
-                probs[currentPosition[0]][currentPosition[1]] = 1.0D;
+                probs[currentPosition[POSITION_INDEX_Y]][currentPosition[POSITION_INDEX_X]] = 1.0D;
                 break;
         }
         map.setProbs(probs);
