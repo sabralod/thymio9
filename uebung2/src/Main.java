@@ -33,7 +33,15 @@ public class Main {
 
         Dijkstra dijkstra = new Dijkstra(getStartPosition(), orientation, getEndPosition(), map.getObstacles());
         List<Integer> path = dijkstra.getPath();
-//        runPath(path);
+        runPath(path);
+    }
+
+    private static void shortSleep() {
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     private static void runPath(List<Integer> actions) {
@@ -41,18 +49,23 @@ public class Main {
         for (Integer action : actions) {
             switch (action) {
                 case Dijkstra.ACTION_MOVE_FORWARD:
+                    shortSleep();
                     moveForward();
                     break;
                 case Dijkstra.ACTION_TURN_RIGHT:
+                    shortSleep();
                     turnRight();
                     break;
                 case Dijkstra.ACTION_TURN_LEFT:
+                    shortSleep();
                     turnLeft();
                     break;
                 case Dijkstra.ACTION_TURN_AROUND:
+                    shortSleep();
                     turnAround();
                     break;
                 default:
+                    System.out.println("PAINC");
                     //TODO error handling
                     break;
             }
@@ -81,7 +94,7 @@ public class Main {
             {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
             {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
             {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-            {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1}};
+            {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
         orientation = 0;
 
         map.setOrientation(orientation);

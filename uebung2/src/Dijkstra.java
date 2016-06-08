@@ -17,9 +17,10 @@ public class Dijkstra {
     private static final int COST_LEFT_RIGHT = 2;
     private static final int COST_TURN_AROUND = 3;
 
+    //TODO replace dijkstraGraph with vertices + edges
     private DijkstraGraph dijkstraGraph;
-    private ArrayList<DijkstraVertex> openList;
-    private ArrayList<DijkstraVertex> closedList;
+    private List<DijkstraVertex> openList;
+    private List<DijkstraVertex> closedList;
     private List<Integer> fastestPath;
 
     private int[] orientations = new int[] { Main.ORIENTATION_UP, Main.ORIENTATION_RIGHT, Main.ORIENTATION_LEFT, Main.ORIENTATION_DOWN };
@@ -37,11 +38,63 @@ public class Dijkstra {
     }
 
     public List<Integer> getPath() {
-        initGraph();
+        initVertices();
+        initEdges();
         initLists();
-        testOutput();
-//        runDijkstra();
+        runDijkstra();
+//        System.out.println("openlist size: " + openList.size());
+//        System.out.println("closedlist size: " + closedList.size());
+        extractFastestPath();
+//        for(int i = 1; i <= fastestPath.size(); i++) {
+//            System.out.println("Action " + (fastestPath.size() + 1 - i) + ": " + fastestPath.get(i - 1));
+//        }
+        invertPathOrder();
         return fastestPath;
+    }
+
+    private void invertPathOrder() {
+        List<Integer> invertedList = new ArrayList<>();
+        for(int i = fastestPath.size(); i > 0; i--) {
+            invertedList.add(fastestPath.get(i - 1));
+        }
+        fastestPath = invertedList;
+    }
+
+    private void extractFastestPath() {
+        fastestPath = new ArrayList<>();
+        DijkstraVertex tailVertex = findEndVertex();
+        while(!(Arrays.equals(tailVertex.position, startPosition) && tailVertex.orientation == startOrientation)) {
+            for(DijkstraEdge edge : dijkstraGraph.dijkstraEdges) {
+                if(edge.destinationVertex.equals(tailVertex) && edge.sourceVertex.equals(tailVertex.prevVertex)) {
+                    fastestPath.add(edge.action);
+                    tailVertex = edge.sourceVertex;
+                    break;
+                }
+            }
+        }
+    }
+
+    private DijkstraVertex findEndVertex() {
+        DijkstraVertex endVertex = null;
+        int minCost = DijkstraVertex.INITIAL_COST;
+        for(DijkstraVertex vertex : dijkstraGraph.dijkstraVertices) {
+            if(Arrays.equals(vertex.position, endPosition) && vertex.cost < minCost) {
+                minCost = vertex.cost;
+                endVertex = vertex;
+            }
+        }
+        return endVertex;
+    }
+
+    private void initEdges() {
+        for(DijkstraVertex vertex : dijkstraGraph.dijkstraVertices) {
+            for(int action : actions) {
+                if(action == ACTION_MOVE_FORWARD && !canMoveForward(vertex)) {
+                    continue;
+                }
+                dijkstraGraph.dijkstraEdges.add(new DijkstraEdge(vertex, action));
+            }
+        }
     }
 
     //TODO delete! prints vertexes and edges in graph
@@ -50,7 +103,7 @@ public class Dijkstra {
         for(DijkstraVertex vertex : dijkstraGraph.dijkstraVertices) {
             counter++;
             System.out.println("========================================== " + counter + " =============================================");
-            System.out.println("Vertex: { X: " + vertex.getPosition()[Main.POSITION_INDEX_X] + ", Y: " + vertex.getPosition()[Main.POSITION_INDEX_Y] + ", O: " + vertex.getOrientation() + "}");
+            System.out.println("Vertex: { X: " + vertex.getPosition()[Main.POSITION_INDEX_X] + ", Y: " + vertex.getPosition()[Main.POSITION_INDEX_Y] + ", O: " + vertex.getOrientation() + ", cost: " + vertex.getCost() + " }");
             for(DijkstraEdge edge : dijkstraGraph.dijkstraEdges) {
                 if(edge.sourceVertex.equals(vertex)) {
                     System.out.println("|__Edges: { Destination: { X:" + edge.destinationVertex.getPosition()[Main.POSITION_INDEX_X] + ", Y: " + edge.destinationVertex.getPosition()[Main.POSITION_INDEX_Y] + ", O: " + edge.destinationVertex.getOrientation() + "},");
@@ -63,22 +116,71 @@ public class Dijkstra {
     }
 
     private void runDijkstra() {
+        //set fastestPath which is an ArrayList of Actions/Integers
+        DijkstraVertex currentVertex = closedList.get(closedList.size() - 1);
         //iterate until openList is empty
+        //TODO costs are working (?) only checked with very small map
         while (openList.size() > 0) {
             //TODO do dijkstra loop
+//            int minCost = Integer.MAX_VALUE;
+            DijkstraVertex newVertex = null;
+            for(DijkstraEdge edge : dijkstraGraph.dijkstraEdges) {
+                if(edge.sourceVertex.equals(currentVertex) && isInOpenList(edge.destinationVertex)) {
+                    edge.destinationVertex.tryToSetCost(edge);
+//                    if(edge.destinationVertex.cost < minCost) {
+//                        minCost = edge.destinationVertex.cost;
+//                        newVertex =  edge.destinationVertex;
+//                    }
+                }
+            }
+            newVertex = findShortestVertex();
+            if(newVertex != null) {
+                currentVertex = newVertex;
+                closedList.add(newVertex);
+
+                for(int i = 0; i < openList.size(); i++) {
+                    if(openList.get(i).equals(newVertex)) {
+                        openList.remove(i);
+                        break;
+                    }
+                }
+            }
         }
-        //set fastestPath which is an ArrayList of Actions/Integers
-        fastestPath = new ArrayList<>();
     }
 
+    private DijkstraVertex findShortestVertex() {
+        DijkstraVertex result = null;
+        for(DijkstraVertex vertex : dijkstraGraph.dijkstraVertices) {
+            if(vertex.cost != DijkstraVertex.INITIAL_COST && isInOpenList(vertex)) {
+                if(result == null) {
+                    result = vertex;
+                } else if(vertex.cost < result.cost) {
+                    result = vertex;
+                }
+            }
+        }
+        return result;
+    }
+
+    private boolean isInOpenList(DijkstraVertex checkVertex) {
+        for(DijkstraVertex vertex : openList) {
+            if(vertex.equals(checkVertex)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    //TODO delete?
     private void initLists() {
         openList = new ArrayList<>();
         closedList = new ArrayList<>();
 
-        for(DijkstraVertex vertex : dijkstraGraph.getDijkstraVertices()) {
+        for(DijkstraVertex vertex : dijkstraGraph.dijkstraVertices) {
             //adds node to the openList or to closedList if it is the startPosition/Orientation
-            if (vertex.getPosition() == startPosition && vertex.getOrientation() == startOrientation) {
-                vertex.tryToSetCost(START_POSITION_COST);
+            if (isStartVertex(vertex)) {
+                vertex.cost = START_POSITION_COST;
+                vertex.prevVertex = vertex;
                 closedList.add(vertex);
             } else {
                 openList.add(vertex);
@@ -86,12 +188,9 @@ public class Dijkstra {
         }
     }
 
-    private void initGraph() {
+    private void initVertices() {
+        dijkstraGraph = new DijkstraGraph();
         int[] position;
-        ArrayList<DijkstraVertex> vertices = new ArrayList<>();
-        ArrayList<DijkstraEdge> edges = new ArrayList<>();
-        DijkstraVertex vertex;
-        DijkstraEdge edge;
 
         //creates possible vertices and edges
         //iterates through every map position (map is fixed 20x8)
@@ -100,24 +199,54 @@ public class Dijkstra {
                 position = new int[] {y, x};
                 //throws out positions which are obstacles
                 if(!isObstacle(position)) {
-                    //iterates through every possible orientation (up,right,left,down)
                     for(int orientation : orientations) {
-                        vertex = new DijkstraVertex(new int[] { position[Main.POSITION_INDEX_Y], position[Main.POSITION_INDEX_X] }, orientation);
-                        vertices.add(vertex);
-                        //iterates through every possible action (move, turn right, left, around)
-                        for(int action : actions) {
-                            //skips move actions which cannot be made
-                            if(action == ACTION_MOVE_FORWARD && !canMoveForward(vertex)) {
-                                continue;
-                            }
-                            edge = new DijkstraEdge(vertex, action);
-                            edges.add(edge);
-                        }
+                        DijkstraVertex newVertex = new DijkstraVertex(new int[]{position[Main.POSITION_INDEX_Y], position[Main.POSITION_INDEX_X]}, orientation);
+                        dijkstraGraph.dijkstraVertices.add(newVertex);
                     }
+//                    initVertices(position);
+//                    //iterates through every possible orientation (up,right,left,down)
+//                    for(int orientation : orientations) {
+//                        vertex = new DijkstraVertex(new int[] { position[Main.POSITION_INDEX_Y], position[Main.POSITION_INDEX_X] }, orientation);
+//                        vertices.add(vertex);
+//                        //iterates through every possible action (move, turn right, left, around)
+//                        for(int action : actions) {
+//                            //skips move actions which cannot be made
+//                            if(action == ACTION_MOVE_FORWARD && !canMoveForward(vertex)) {
+//                                continue;
+//                            }
+//                            edge = new DijkstraEdge(vertex, action);
+//                            edges.add(edge);
+//                        }
+//                    }
                 }
             }
         }
-        dijkstraGraph = new DijkstraGraph(vertices, edges);
+    }
+
+    private void initVertices(int[] position) {
+        for(int orientation : orientations) {
+            DijkstraVertex newVertex = new DijkstraVertex(new int[] { position[Main.POSITION_INDEX_Y], position[Main.POSITION_INDEX_X] }, orientation);
+            dijkstraGraph.dijkstraVertices.add(newVertex);
+//            if (isStartVertex(newVertex)) {
+//                newVertex.tryToSetCost(START_POSITION_COST);
+//                closedList.add(newVertex);
+//            } else {
+//                openList.add(newVertex);
+//            }
+        }
+    }
+
+    private boolean isStartVertex(DijkstraVertex vertex) {
+        return vertex.position[Main.POSITION_INDEX_Y] == startPosition[Main.POSITION_INDEX_Y] && vertex.position[Main.POSITION_INDEX_X] == startPosition[Main.POSITION_INDEX_X] && vertex.orientation == startOrientation;
+    }
+
+    private void initEdges(DijkstraVertex dijkstraVertex) {
+        for(int action : actions) {
+            if(action == ACTION_MOVE_FORWARD && !canMoveForward(dijkstraVertex)) {
+                continue;
+            }
+            dijkstraGraph.dijkstraEdges.add(new DijkstraEdge(dijkstraVertex, action));
+        }
     }
 
     private boolean canMoveForward(DijkstraVertex vertex) {
@@ -167,12 +296,19 @@ public class Dijkstra {
     }
 
     //returns the next Vertex when executing a action on a vertex
-    private DijkstraVertex nextVertex(DijkstraVertex sourceVertex, int action) {
-        if(action == ACTION_MOVE_FORWARD) {
-            return new DijkstraVertex(nextPosition(sourceVertex), sourceVertex.getOrientation());
-        } else {
-            return new DijkstraVertex(sourceVertex.getPosition(), nextOrientation(sourceVertex.getOrientation(), action));
+    private int getDestinationVertex(DijkstraVertex sourceVertex, int action) {
+        for(int i = 0; i < dijkstraGraph.dijkstraVertices.size(); i++) {
+            if(action == ACTION_MOVE_FORWARD) {
+                if(dijkstraGraph.dijkstraVertices.get(i).equals(new DijkstraVertex(nextPosition(sourceVertex), sourceVertex.orientation))) {
+                    return i;
+                }
+            } else {
+                if(dijkstraGraph.dijkstraVertices.get(i).equals(new DijkstraVertex(sourceVertex.position, nextOrientation(sourceVertex.orientation, action)))) {
+                    return i;
+                }
+            }
         }
+        return -1;
     }
 
     private int nextOrientation(int orientation, int action) {
@@ -250,56 +386,46 @@ public class Dijkstra {
 
     //TODO build in checks if(canMoveUp) etc
     private int[] nextMoveUp(int[] position) {
-        position[Main.POSITION_INDEX_Y] -= 1;
-        return position;
+        return new int[] { position[Main.POSITION_INDEX_Y] - 1, position[Main.POSITION_INDEX_X] };
     }
 
     private int[] nextMoveRight(int[] position) {
-        position[Main.POSITION_INDEX_X] += 1;
-        return position;
+        return new int[] { position[Main.POSITION_INDEX_Y], position[Main.POSITION_INDEX_X] + 1 };
     }
 
     private int[] nextMoveLeft(int[] position) {
-        position[Main.POSITION_INDEX_X] -= 1;
-        return position;
+        return new int[] { position[Main.POSITION_INDEX_Y], position[Main.POSITION_INDEX_X] - 1 };
     }
 
     private int[] nextMoveDown(int[] position) {
-        position[Main.POSITION_INDEX_Y] += 1;
-        return position;
+        return new int[] { position[Main.POSITION_INDEX_Y] + 1, position[Main.POSITION_INDEX_X] };
     }
 
     private class DijkstraGraph {
         private List<DijkstraVertex> dijkstraVertices;
         private List<DijkstraEdge> dijkstraEdges;
 
-        public DijkstraGraph(List<DijkstraVertex> dijkstraVertices, List<DijkstraEdge> dijkstraEdges) {
-            this.dijkstraVertices = dijkstraVertices;
-            this.dijkstraEdges = dijkstraEdges;
-        }
-
-        public List<DijkstraVertex> getDijkstraVertices() {
-            return dijkstraVertices;
-        }
-
-        public List<DijkstraEdge> getDijkstraEdges() {
-            return dijkstraEdges;
+        public DijkstraGraph() {
+            this.dijkstraVertices = new ArrayList<>();
+            this.dijkstraEdges = new ArrayList<>();
         }
     }
 
     private class DijkstraVertex {
         //marks unvisited Nodes
-        private int INITIAL_COST = Integer.MAX_VALUE;
+        private static final int INITIAL_COST = Integer.MAX_VALUE;
 
         //TODO maybe add id?
         private int[] position;
         private int orientation;
         private int cost;
+        private DijkstraVertex prevVertex;
 
         public DijkstraVertex(int[] position, int orientation) {
             this.position = position;
             this.orientation = orientation;
             cost = INITIAL_COST;
+            prevVertex = null;
         }
 
         public int[] getPosition() {
@@ -314,14 +440,20 @@ public class Dijkstra {
             return cost;
         }
 
-        public void tryToSetCost(int newCost) {
+        public void tryToSetCost(DijkstraEdge newEdge) {
+            if(newEdge.sourceVertex.cost == INITIAL_COST) {
+                return;
+            }
+
+            int newCost = newEdge.sourceVertex.cost + newEdge.cost;
             if(newCost < cost) {
                 cost = newCost;
+                prevVertex = newEdge.sourceVertex;
             }
         }
 
         public boolean equals(DijkstraVertex vertex) {
-            return vertex.getPosition() == position && vertex.getOrientation() == orientation;
+            return vertex.position[Main.POSITION_INDEX_Y] == position[Main.POSITION_INDEX_Y] && vertex.position[Main.POSITION_INDEX_X] == position[Main.POSITION_INDEX_X] && vertex.orientation == orientation;
         }
     }
 
@@ -336,7 +468,7 @@ public class Dijkstra {
             this.sourceVertex = sourceVertex;
             this.action = action;
             //returns the next Vertex when executing a action ("action") on a vertex ("sourceVertex")
-            destinationVertex = nextVertex(sourceVertex, action);
+            destinationVertex = dijkstraGraph.dijkstraVertices.get(getDestinationVertex(sourceVertex, action));
             cost = getActionCost(action);
         }
 
