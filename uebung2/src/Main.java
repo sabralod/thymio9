@@ -1,7 +1,8 @@
 import iw.ur.thymio.Thymio.Thymio;
 import iw.ur.thymio.map.Map;
 
-import java.util.ArrayList;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -12,27 +13,76 @@ public class Main {
     public static final int MAP_WIDTH = 20;
     public static final int MAP_HEIGHT = 8;
     public static final int MAP_MINIMUM_W_H = 0;
-    public static final int ORIENTATION_UP = 0;
-    public static final int ORIENTATION_RIGHT = 90;
-    public static final int ORIENTATION_LEFT = -90;
-    public static final int ORIENTATION_DOWN = 180;
-    public static final int POSITION_INDEX_Y = 0;
-    public static final int POSITION_INDEX_X = 1;
+    private static final int FRONT_SENSOR = 2;
+    private static final int FRONT_SENSOR_STOP_VALUE = 1000;
+    private static final double ROTATE_RIGHT_VALUE = 75.0D;
+    private static final double ROTATE_LEFT_VALUE = -80.0D;
 
     private static Thymio thymio;
     private static Map map;
     private static double[][] probs;
+    private static TOrientation orientation;
     private static double[][] startPosition;
+    private static TOrientation startOrientation;
     private static double[][] endPosition;
 
-    private static int orientation;
-
     public static void main(String[] args) {
+        //change move and rotate costs in TAction
+        //set obstacles here (1 = obstacle)
+        try {
+            FileWriter obstacles = new FileWriter("map.csv");
+            obstacles.write(
+                    "0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0\n" +
+                    "1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0\n" +
+                    "0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0\n" +
+                    "0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1\n" +
+                    "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0\n" +
+                    "1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0\n" +
+                    "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0\n" +
+                    "0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+            );
+            obstacles.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        //chose A* (true) or Dijkstra (false)
+        boolean useHeuristic = false;
+        //set start position/orientation + endposition
+        startPosition = new double[][]
+                {{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+        startOrientation = TOrientation.UP;
+        endPosition = new double[][]
+                {{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
         initMap();
 //        initThymio();
 
-        Dijkstra dijkstra = new Dijkstra(getStartPosition(), orientation, getEndPosition(), map.getObstacles());
-        List<Integer> path = dijkstra.getPath();
+        List<TAction> path;
+        if(useHeuristic) {
+            AStar aStar = new AStar(getStartPosition(), orientation, getEndPosition(), map.getObstacles());
+            path = aStar.getPath();
+        } else {
+            Dijkstra dijkstra = new Dijkstra(getStartPosition(), orientation, getEndPosition(), map.getObstacles());
+            path = dijkstra.getPath();
+        }
+
+        if(path == null) {
+            System.out.println("No path available!");
+            return;
+        }
         runPath(path);
     }
 
@@ -44,60 +94,40 @@ public class Main {
         }
     }
 
-    private static void runPath(List<Integer> actions) {
-        //TODO console output that tells the user what actions are being taken (to document the path)
-        for (Integer action : actions) {
-            switch (action) {
-                case Dijkstra.ACTION_MOVE_FORWARD:
+    private static void runPath(List<TAction> actions) {
+        for (int i = 0; i < actions.size(); i++) {
+            System.out.println("Vertex: Position X: " + getCurrentPosition()[TVertex.POSITION_INDEX_X] + " | Y: " + getCurrentPosition()[TVertex.POSITION_INDEX_Y] + " | Ori: " + orientation);
+            System.out.println("Action " + i + ": " + actions.get(i));
+            switch (actions.get(i)) {
+                case MOVE:
                     shortSleep();
                     moveForward();
                     break;
-                case Dijkstra.ACTION_TURN_RIGHT:
+                case RIGHT:
                     shortSleep();
                     turnRight();
                     break;
-                case Dijkstra.ACTION_TURN_LEFT:
+                case LEFT:
                     shortSleep();
                     turnLeft();
                     break;
-                case Dijkstra.ACTION_TURN_AROUND:
+                case AROUND:
                     shortSleep();
                     turnAround();
                     break;
                 default:
-                    System.out.println("PAINC");
-                    //TODO error handling
                     break;
             }
         }
+        System.out.println("Vertex: Position X: " + getCurrentPosition()[TVertex.POSITION_INDEX_X] + " | Y: " + getCurrentPosition()[TVertex.POSITION_INDEX_Y] + " | Ori: " + orientation);
     }
 
     private static void initMap() {
-        //map.csv is created added edited manually TODO autocreate and populate for (map/obstacles, orientation, probs/start, endpoint)
         map = new Map("map.csv");
-        ArrayList<int[]> obstacles = map.getObstacles();
-        probs = new double[][]
-            {{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-            {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-            {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-            {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-            {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-            {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-            {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-            {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
-        startPosition = probs.clone();
-        endPosition = new double[][]
-            {{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-            {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-            {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-            {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-            {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-            {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-            {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-            {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
-        orientation = 0;
+        probs = startPosition.clone();
+        orientation = startOrientation;
 
-        map.setOrientation(orientation);
+        map.setOrientation(orientation.getValue());
         map.setProbs(probs);
         map.update();
     }
@@ -110,107 +140,102 @@ public class Main {
 
     private static void moveForward() {
         int[] currentPosition = getCurrentPosition();
-        probs[currentPosition[0]][currentPosition[1]] = 0.0D;
+        probs[currentPosition[TVertex.POSITION_INDEX_Y]][currentPosition[TVertex.POSITION_INDEX_X]] = 0.0D;
         switch (orientation) {
-            case ORIENTATION_UP:
-                probs[currentPosition[POSITION_INDEX_Y] - 1][currentPosition[POSITION_INDEX_X]] = 1.0D;
+            case UP:
+                probs[currentPosition[TVertex.POSITION_INDEX_Y] - 1][currentPosition[TVertex.POSITION_INDEX_X]] = 1.0D;
                 break;
-            case ORIENTATION_RIGHT:
-                probs[currentPosition[POSITION_INDEX_Y]][currentPosition[POSITION_INDEX_X] + 1] = 1.0D;
+            case RIGHT:
+                probs[currentPosition[TVertex.POSITION_INDEX_Y]][currentPosition[TVertex.POSITION_INDEX_X] + 1] = 1.0D;
                 break;
-            case ORIENTATION_LEFT:
-                probs[currentPosition[POSITION_INDEX_Y]][currentPosition[POSITION_INDEX_X] - 1] = 1.0D;
+            case LEFT:
+                probs[currentPosition[TVertex.POSITION_INDEX_Y]][currentPosition[TVertex.POSITION_INDEX_X] - 1] = 1.0D;
                 break;
-            case ORIENTATION_DOWN:
-                probs[currentPosition[POSITION_INDEX_Y] + 1][currentPosition[POSITION_INDEX_X]] = 1.0D;
+            case DOWN:
+                probs[currentPosition[TVertex.POSITION_INDEX_Y] + 1][currentPosition[TVertex.POSITION_INDEX_X]] = 1.0D;
                 break;
             default:
-                probs[currentPosition[POSITION_INDEX_Y]][currentPosition[POSITION_INDEX_X]] = 1.0D;
+                probs[currentPosition[TVertex.POSITION_INDEX_Y]][currentPosition[TVertex.POSITION_INDEX_X]] = 1.0D;
                 break;
         }
         map.setProbs(probs);
         map.update();
-        //TODO do safety checks
-//        thymio.move();
+
+        //TODO maybe add check for white/black fields to keep consistency
+//        if (thymio.getProxHorizontal()[FRONT_SENSOR] >= FRONT_SENSOR_STOP_VALUE) {
+//            thymio.stop();
+//        } else {
+//            thymio.move();
+//        }
     }
 
     private static void turnRight() {
         switch (orientation) {
-            case 0:
-                orientation = 90;
+            case UP:
+                orientation = TOrientation.UP.right();
                 break;
-            case 90:
-                orientation = 180;
+            case RIGHT:
+                orientation = TOrientation.RIGHT.right();
                 break;
-            case -90:
-                orientation = 0;
+            case LEFT:
+                orientation = TOrientation.LEFT.right();
                 break;
-            case 180:
-                orientation = -90;
-                break;
-            default:
-                //TODO error handling
+            case DOWN:
+                orientation = TOrientation.DOWN.right();
                 break;
         }
-        map.setOrientation(orientation);
+        map.setOrientation(orientation.getValue());
         map.update();
         //TODO do safety checks
-//        thymio.rotate(90);
+//        thymio.rotate(ROTATE_RIGHT_VALUE);
     }
 
     private static void turnLeft() {
         switch (orientation) {
-            case 0:
-                orientation = -90;
+            case UP:
+                orientation = TOrientation.UP.left();
                 break;
-            case 90:
-                orientation = 0;
+            case RIGHT:
+                orientation = TOrientation.RIGHT.left();
                 break;
-            case -90:
-                orientation = 180;
+            case LEFT:
+                orientation = TOrientation.LEFT.left();
                 break;
-            case 180:
-                orientation = 90;
-                break;
-            default:
-                //TODO error handling
+            case DOWN:
+                orientation = TOrientation.DOWN.left();
                 break;
         }
-        map.setOrientation(orientation);
+        map.setOrientation(orientation.getValue());
         map.update();
         //TODO do safety checks
-//        thymio.rotate(-90);
+//        thymio.rotate(ROTATE_LEFT_VALUE);
     }
 
     private static void turnAround() {
         switch (orientation) {
-            case 0:
-                orientation = 180;
+            case UP:
+                orientation = TOrientation.UP.around();
                 break;
-            case 90:
-                orientation = -90;
+            case RIGHT:
+                orientation = TOrientation.RIGHT.around();
                 break;
-            case -90:
-                orientation = 90;
+            case LEFT:
+                orientation = TOrientation.LEFT.around();
                 break;
-            case 180:
-                orientation = 0;
-                break;
-            default:
-                //TODO error handling
+            case DOWN:
+                orientation = TOrientation.DOWN.around();
                 break;
         }
-        map.setOrientation(orientation);
+        map.setOrientation(orientation.getValue());
         map.update();
         //TODO do safety checks
-//        thymio.rotate(180);
+//        thymio.rotate(ROTATE_RIGHT_VALUE * 2);
     }
 
     private static int[] getPosition(double[][] position) {
         for (int y = 0; y < position.length; y++) {
             for (int x = 0; x < position[y].length; x++) {
                 if (position[y][x] == 1.0D) {
-//                    System.out.println("y: " + y + "\nx: " + x);
                     return new int[] {y, x};
                 }
             }

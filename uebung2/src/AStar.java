@@ -6,19 +6,19 @@ import java.util.List;
  * Created by dennis on 24.05.16.
  */
 // Reference Material:
-// http://www.vogella.com/tutorials/JavaAlgorithmsDijkstra/article.html
 // https://en.wikipedia.org/wiki/A*_search_algorithm#Pseudocode
-public class Dijkstra {
+// http://theory.stanford.edu/~amitp/GameProgramming/Heuristics.html
+public class AStar {
     private List<TVertex> openList;
     private List<TVertex> closedList;
     private List<TAction> fastestPath;
 
-    private final int[] startPosition;
-    private final TOrientation startOrientation;
-    private final int[] endPosition;
-    private final ArrayList<int[]> obstacles;
+    private int[] startPosition;
+    private TOrientation startOrientation;
+    private int[] endPosition;
+    private ArrayList<int[]> obstacles;
 
-    public Dijkstra(int[] startPosition, TOrientation startOrientation, int[] endPosition, ArrayList<int[]> obstacles) {
+    public AStar(int[] startPosition, TOrientation startOrientation, int[] endPosition, ArrayList<int[]> obstacles) {
         this.startPosition = startPosition;
         this.startOrientation = startOrientation;
         this.endPosition = endPosition;
@@ -26,15 +26,16 @@ public class Dijkstra {
     }
 
     public List<TAction> getPath() {
-        runDijkstra();
+        runAStar();
         return fastestPath;
     }
 
-    private void runDijkstra() {
+    private void runAStar() {
         openList = new ArrayList<>();
         closedList = new ArrayList<>();
         TVertex startVertex = new TVertex(startPosition, startOrientation);
         startVertex.setMinCost(TVertex.START_POSITION_COST);
+        startVertex.setHeuristicCost(calcHeuristicCost(startVertex));
         openList.add(startVertex);
         while(!openList.isEmpty()) {
             TVertex currentVertex = null;
@@ -42,7 +43,7 @@ public class Dijkstra {
                 if(currentVertex == null) {
                     currentVertex = vertex;
                 }
-                else if(vertex.getMinCost() < currentVertex.getMinCost()) {
+                else if(vertex.getHeuristicCost() < currentVertex.getHeuristicCost()) {
                     currentVertex = vertex;
                 }
             }
@@ -67,9 +68,89 @@ public class Dijkstra {
                 }
                 neighbor.setPrevVertex(currentVertex);
                 neighbor.setMinCost(currentVertex.getMinCost() + edge.getAction().getCost());
+                neighbor.setHeuristicCost(calcHeuristicCost(neighbor));
+            }
+        }
+    }
+
+    private int calcHeuristicCost(TVertex vertex) {
+        //Manhattan distance + rotation costs
+        if(Arrays.equals(vertex.getPosition(), endPosition)) {
+            return 0;
+        }
+
+        boolean isRight = false, isLeft = false, isUp = false, isDown = false, isOnX = false, isOnY = false;
+        int distX = vertex.getX() - endPosition[TVertex.POSITION_INDEX_X];
+        int distY = vertex.getY() - endPosition[TVertex.POSITION_INDEX_Y];
+        if(distX < 0) {
+            isRight = true;
+        } else if(distX > 0) {
+            isLeft = true;
+        } else {
+            isOnX = true;
+        }
+        if(distY > 0) {
+            isUp = true;
+        } else if(distY < 0) {
+            isDown = true;
+        } else {
+            isOnY = true;
+        }
+
+        //init rotation costs with worst case cost
+        int rotationCost = TAction.RIGHT.getCost() * 2;
+        if(isOnX && isUp) {
+            if(vertex.getOrientation() == TOrientation.UP) {
+                rotationCost = 0;
+            } else if(vertex.getOrientation() == TOrientation.DOWN) {
+                rotationCost = TAction.AROUND.getCost();
+            } else {
+                rotationCost = TAction.RIGHT.getCost();
+            }
+        }
+        if(isOnX && isDown) {
+            if(vertex.getOrientation() == TOrientation.DOWN) {
+                rotationCost = 0;
+            } else if(vertex.getOrientation() == TOrientation.UP) {
+                rotationCost = TAction.AROUND.getCost();
+            } else {
+                rotationCost = TAction.RIGHT.getCost();
             }
         }
 
+        if(isOnY && isRight) {
+            if(vertex.getOrientation() == TOrientation.RIGHT) {
+                rotationCost = 0;
+            } else if(vertex.getOrientation() == TOrientation.LEFT) {
+                rotationCost = TAction.AROUND.getCost();
+            } else {
+                rotationCost = TAction.RIGHT.getCost();
+            }
+        }
+        if(isOnY && isLeft) {
+            if(vertex.getOrientation() == TOrientation.LEFT) {
+                rotationCost = 0;
+            } else if(vertex.getOrientation() == TOrientation.RIGHT) {
+                rotationCost = TAction.AROUND.getCost();
+            } else {
+                rotationCost = TAction.RIGHT.getCost();
+            }
+        }
+
+        if(isRight && isUp && (vertex.getOrientation() == TOrientation.RIGHT || vertex.getOrientation() == TOrientation.UP)) {
+            rotationCost = TAction.RIGHT.getCost();
+        }
+        if(isRight && isDown && (vertex.getOrientation() == TOrientation.RIGHT || vertex.getOrientation() == TOrientation.DOWN)) {
+            rotationCost = TAction.RIGHT.getCost();
+        }
+        if(isLeft && isUp && (vertex.getOrientation() == TOrientation.LEFT || vertex.getOrientation() == TOrientation.UP)) {
+            rotationCost = TAction.RIGHT.getCost();
+        }
+        if(isLeft && isDown && (vertex.getOrientation() == TOrientation.LEFT || vertex.getOrientation() == TOrientation.DOWN)) {
+            rotationCost = TAction.RIGHT.getCost();
+        }
+
+        return rotationCost + TAction.MOVE.getCost() * (Math.abs(distX) + Math.abs(distY));
     }
 
     private List<TEdge> findAvailableEdges(TVertex vertex) {
