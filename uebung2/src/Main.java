@@ -1,4 +1,3 @@
-import iw.ur.thymio.Thymio.Thymio;
 import iw.ur.thymio.map.Map;
 
 import java.io.FileWriter;
@@ -16,7 +15,7 @@ public class Main {
     private static final int FRONT_SENSOR = 2;
     private static final int FRONT_SENSOR_STOP_VALUE = 1000;
     private static final double ROTATE_RIGHT_VALUE = 75.0D;
-    private static final double ROTATE_LEFT_VALUE = -80.0D;
+    private static final double ROTATE_LEFT_VALUE = -83.0D;
 
     private static Thymio thymio;
     private static Map map;
@@ -25,6 +24,7 @@ public class Main {
     private static double[][] startPosition;
     private static TOrientation startOrientation;
     private static double[][] endPosition;
+    private static boolean useThymio;
 
     public static void main(String[] args) {
         //change move and rotate costs in TAction
@@ -32,24 +32,26 @@ public class Main {
         try {
             FileWriter obstacles = new FileWriter("map.csv");
             obstacles.write(
-                    "0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0\n" +
-                    "1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0\n" +
-                    "0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0\n" +
-                    "0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1\n" +
                     "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0\n" +
-                    "1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0\n" +
+                    "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0\n" +
+                    "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1\n" +
+                    "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0\n" +
                     "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0\n" +
-                    "0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+                    "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0\n" +
+                    "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0\n" +
+                    "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0"
             );
             obstacles.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
-        //chose A* (true) or Dijkstra (false)
-        boolean useHeuristic = false;
+        //choose A* (true) or Dijkstra (false)
+        boolean useHeuristic = true;
+        //set true if the Thymio should be used or set to false for testing without the Thymio
+        useThymio = true;
         //set start position/orientation + endposition
         startPosition = new double[][]
-                {{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
@@ -57,18 +59,20 @@ public class Main {
                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
-        startOrientation = TOrientation.UP;
+        startOrientation = TOrientation.LEFT;
         endPosition = new double[][]
-                {{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0},
                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
         initMap();
-//        initThymio();
+        if(useThymio) {
+            initThymio();
+        }
 
         List<TAction> path;
         if(useHeuristic) {
@@ -100,19 +104,27 @@ public class Main {
             System.out.println("Action " + i + ": " + actions.get(i));
             switch (actions.get(i)) {
                 case MOVE:
-                    shortSleep();
+                    if(!useThymio) {
+                        shortSleep();
+                    }
                     moveForward();
                     break;
                 case RIGHT:
-                    shortSleep();
+                    if(!useThymio) {
+                        shortSleep();
+                    }
                     turnRight();
                     break;
                 case LEFT:
-                    shortSleep();
+                    if(!useThymio) {
+                        shortSleep();
+                    }
                     turnLeft();
                     break;
                 case AROUND:
-                    shortSleep();
+                    if(!useThymio) {
+                        shortSleep();
+                    }
                     turnAround();
                     break;
                 default:
@@ -135,7 +147,7 @@ public class Main {
     private static void initThymio() {
         thymio = new Thymio("192.168.10.1");
         //TODO test to find sensible value
-        thymio.setMoveSensitivity(3000);
+        thymio.setMoveSensitivity(4500);
     }
 
     private static void moveForward() {
@@ -162,11 +174,13 @@ public class Main {
         map.update();
 
         //TODO maybe add check for white/black fields to keep consistency
-//        if (thymio.getProxHorizontal()[FRONT_SENSOR] >= FRONT_SENSOR_STOP_VALUE) {
-//            thymio.stop();
-//        } else {
-//            thymio.move();
-//        }
+        if(useThymio) {
+            if (thymio.getProxHorizontal()[FRONT_SENSOR] >= FRONT_SENSOR_STOP_VALUE) {
+                thymio.stop();
+            } else {
+                thymio.move();
+            }
+        }
     }
 
     private static void turnRight() {
@@ -186,8 +200,11 @@ public class Main {
         }
         map.setOrientation(orientation.getValue());
         map.update();
+
         //TODO do safety checks
-//        thymio.rotate(ROTATE_RIGHT_VALUE);
+        if(useThymio) {
+            thymio.rotate(ROTATE_RIGHT_VALUE);
+        }
     }
 
     private static void turnLeft() {
@@ -207,8 +224,11 @@ public class Main {
         }
         map.setOrientation(orientation.getValue());
         map.update();
+
         //TODO do safety checks
-//        thymio.rotate(ROTATE_LEFT_VALUE);
+        if(useThymio) {
+            thymio.rotate(ROTATE_LEFT_VALUE);
+        }
     }
 
     private static void turnAround() {
@@ -228,8 +248,11 @@ public class Main {
         }
         map.setOrientation(orientation.getValue());
         map.update();
+
         //TODO do safety checks
-//        thymio.rotate(ROTATE_RIGHT_VALUE * 2);
+        if(useThymio) {
+            thymio.rotate(ROTATE_RIGHT_VALUE * 2);
+        }
     }
 
     private static int[] getPosition(double[][] position) {
