@@ -5,8 +5,12 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
 
-public class Main {
-    //20x8 Map ist vorgegeben
+public class Start {
+
+    private static String MAP_FILE_PATH = "map.csv";
+    private static boolean USE_ASTAR = false;
+    private static boolean USE_THYMIO = false;
+
     public static final int MAP_WIDTH = 20;
     public static final int MAP_HEIGHT = 8;
     public static final int MAP_MINIMUM_W_H = 0;
@@ -15,37 +19,44 @@ public class Main {
     private static final double ROTATE_RIGHT_VALUE = 75.0D;
     private static final double ROTATE_LEFT_VALUE = -80.0D;
 
+    private Thymio thymio;
+    private Map map;
+    private double[][] probs;
+    private TOrientation orientation;
+    private double[][] startPosition;
+    private TOrientation startOrientation;
+    private double[][] endPosition;
 
+    private List<TAction> path;
 
-    private static Thymio thymio;
-    private static Map map;
-    private static double[][] probs;
-    private static TOrientation orientation;
-    private static double[][] startPosition;
-    private static TOrientation startOrientation;
-    private static double[][] endPosition;
-
-    public static void main(String[] args) {
-        //change move and rotate costs in TAction
-        //set obstacles here (1 = obstacle)
+    private void initialize() {
         try {
-            FileWriter obstacles = new FileWriter("map.csv");
+            FileWriter obstacles = new FileWriter(MAP_FILE_PATH);
             obstacles.write(
                     "0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0\n" +
-                    "1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0\n" +
-                    "0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0\n" +
-                    "0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1\n" +
+                    "0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0\n" +
                     "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0\n" +
-                    "1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0\n" +
-                    "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0\n" +
-                    "0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+                    "0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1\n" +
+                    "0,0,0,1,1,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0\n" +
+                    "0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0\n" +
+                    "0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0\n" +
+                    "0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0"
             );
+//            obstacles.write(
+//                    "0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0\n" +
+//                    "1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0\n" +
+//                    "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0\n" +
+//                    "0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1\n" +
+//                    "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0\n" +
+//                    "1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0\n" +
+//                    "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0\n" +
+//                    "0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
+//            );
             obstacles.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
-        //Choose A* (true) or Dijkstra (false)
-        boolean useHeuristic = false;
+
         //set start position/orientation + endposition
         startPosition = new double[][]
                 {{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
@@ -58,71 +69,37 @@ public class Main {
                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
         startOrientation = TOrientation.UP;
         endPosition = new double[][]
-                {{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1}};
         initMap();
-//        initThymio();
 
-        List<TAction> path;
-        if(useHeuristic) {
+        if (USE_THYMIO)
+            initThymio();
+
+
+        if(USE_ASTAR) {
             AStar aStar = new AStar(getStartPosition(), orientation, getEndPosition(), map.getObstacles());
             path = aStar.getPath();
         } else {
             Dijkstra dijkstra = new Dijkstra(getStartPosition(), orientation, getEndPosition(), map.getObstacles());
             path = dijkstra.getPath();
         }
-
-        if(path == null) {
-            System.out.println("No path available!");
-            return;
-        }
-        runPath(path);
     }
 
-    private static void shortSleep() {
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+    private void initThymio() {
+        thymio = new Thymio("192.168.10.1");
+        //TODO test to find sensible value
+        thymio.setMoveSensitivity(3000);
     }
 
-    private static void runPath(List<TAction> actions) {
-        for (int i = 0; i < actions.size(); i++) {
-            System.out.println("Vertex: Position X: " + getCurrentPosition()[TVertex.POSITION_INDEX_X] + " | Y: " + getCurrentPosition()[TVertex.POSITION_INDEX_Y] + " | Ori: " + orientation);
-            System.out.println("Action " + i + ": " + actions.get(i));
-            switch (actions.get(i)) {
-                case MOVE:
-                    shortSleep();
-                    moveForward();
-                    break;
-                case RIGHT:
-                    shortSleep();
-                    turnRight();
-                    break;
-                case LEFT:
-                    shortSleep();
-                    turnLeft();
-                    break;
-                case AROUND:
-                    shortSleep();
-                    turnAround();
-                    break;
-                default:
-                    break;
-            }
-        }
-        System.out.println("Vertex: Position X: " + getCurrentPosition()[TVertex.POSITION_INDEX_X] + " | Y: " + getCurrentPosition()[TVertex.POSITION_INDEX_Y] + " | Ori: " + orientation);
-    }
-
-    private static void initMap() {
-        map = new Map("map.csv");
+    private void initMap() {
+        map = new Map(MAP_FILE_PATH);
         probs = startPosition.clone();
         orientation = startOrientation;
 
@@ -131,13 +108,36 @@ public class Main {
         map.update();
     }
 
-    private static void initThymio() {
-        thymio = new Thymio("192.168.10.1");
-        //TODO test to find sensible value
-        thymio.setMoveSensitivity(3000);
+    private void runPath() {
+        if (path != null) {
+            for (int i = 0; i < path.size(); i++) {
+                System.out.println("Vertex: Position X: " + getCurrentPosition()[TVertex.POSITION_INDEX_X] + " | Y: " + getCurrentPosition()[TVertex.POSITION_INDEX_Y] + " | Ori: " + orientation);
+                System.out.println("Action " + i + ": " + path.get(i));
+                switch (path.get(i)) {
+                    case MOVE:
+                        shortSleep();
+                        moveForward();
+                        break;
+                    case RIGHT:
+                        shortSleep();
+                        turnRight();
+                        break;
+                    case LEFT:
+                        shortSleep();
+                        turnLeft();
+                        break;
+                    case AROUND:
+                        shortSleep();
+                        turnAround();
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
     }
 
-    private static void moveForward() {
+    private void moveForward() {
         int[] currentPosition = getCurrentPosition();
         probs[currentPosition[TVertex.POSITION_INDEX_Y]][currentPosition[TVertex.POSITION_INDEX_X]] = 0.0D;
         switch (orientation) {
@@ -160,15 +160,17 @@ public class Main {
         map.setProbs(probs);
         map.update();
 
-        //TODO maybe add check for white/black fields to keep consistency
-        if (thymio.getProxHorizontal()[FRONT_SENSOR] >= FRONT_SENSOR_STOP_VALUE) {
-            thymio.stop();
-        } else {
-            thymio.move();
+        if (USE_THYMIO) {
+            //TODO maybe add check for white/black fields to keep consistency
+            if (thymio.getProxHorizontal()[FRONT_SENSOR] >= FRONT_SENSOR_STOP_VALUE) {
+                thymio.stop();
+            } else {
+                thymio.move();
+            }
         }
     }
 
-    private static void turnRight() {
+    private void turnRight() {
         switch (orientation) {
             case UP:
                 orientation = TOrientation.UP.right();
@@ -185,11 +187,14 @@ public class Main {
         }
         map.setOrientation(orientation.getValue());
         map.update();
-        //TODO do safety checks
-//        thymio.rotate(ROTATE_RIGHT_VALUE);
+
+        if (USE_THYMIO) {
+            //TODO do safety checks
+            thymio.rotate(ROTATE_RIGHT_VALUE);
+        }
     }
 
-    private static void turnLeft() {
+    private void turnLeft() {
         switch (orientation) {
             case UP:
                 orientation = TOrientation.UP.left();
@@ -206,11 +211,14 @@ public class Main {
         }
         map.setOrientation(orientation.getValue());
         map.update();
-        //TODO do safety checks
-//        thymio.rotate(ROTATE_LEFT_VALUE);
+
+        if (USE_THYMIO) {
+            //TODO do safety checks
+            thymio.rotate(ROTATE_LEFT_VALUE);
+        }
     }
 
-    private static void turnAround() {
+    private void turnAround() {
         switch (orientation) {
             case UP:
                 orientation = TOrientation.UP.around();
@@ -227,8 +235,29 @@ public class Main {
         }
         map.setOrientation(orientation.getValue());
         map.update();
-        //TODO do safety checks
-//        thymio.rotate(ROTATE_RIGHT_VALUE * 2);
+
+        if (USE_THYMIO) {
+            //TODO do safety checks
+            thymio.rotate(ROTATE_RIGHT_VALUE * 2);
+        }
+    }
+
+    private int[] getCurrentPosition() {
+        return getPosition(probs);
+    }
+
+    private int[] getStartPosition() {
+        return getPosition(startPosition);
+    }
+
+    private int[] getEndPosition() {
+        return getPosition(endPosition);
+    }
+
+    public static void main(String[] args) {
+        Start start = new Start();
+        start.initialize();
+        start.runPath();
     }
 
     private static int[] getPosition(double[][] position) {
@@ -242,15 +271,11 @@ public class Main {
         return null;
     }
 
-    private static int[] getCurrentPosition() {
-        return getPosition(probs);
-    }
-
-    private static int[] getStartPosition() {
-        return getPosition(startPosition);
-    }
-
-    private static int[] getEndPosition() {
-        return getPosition(endPosition);
+    private static void shortSleep() {
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 }

@@ -107,10 +107,10 @@ public class Dijkstra {
     }
 
     private boolean isInsideBounds(int[] position) {
-        return position[TVertex.POSITION_INDEX_X] >= Main.MAP_MINIMUM_W_H
-                && position[TVertex.POSITION_INDEX_X] < Main.MAP_WIDTH
-                && position[TVertex.POSITION_INDEX_Y] >= Main.MAP_MINIMUM_W_H
-                && position[TVertex.POSITION_INDEX_Y] < Main.MAP_HEIGHT;
+        return position[TVertex.POSITION_INDEX_X] >= Start.MAP_MINIMUM_W_H
+                && position[TVertex.POSITION_INDEX_X] < Start.MAP_WIDTH
+                && position[TVertex.POSITION_INDEX_Y] >= Start.MAP_MINIMUM_W_H
+                && position[TVertex.POSITION_INDEX_Y] < Start.MAP_HEIGHT;
     }
 
     private boolean isObstacle(int[] position) {
