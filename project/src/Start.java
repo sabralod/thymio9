@@ -16,11 +16,11 @@ public class Start {
     public static final int MAP_HEIGHT = 8;
     public static final int MAP_MINIMUM_W_H = 0;
     private static final int FRONT_SENSOR = 2;
-    private static final int RIGHT_SENSOR = 3;
-    private static final int LEFT_SENSOR = 1;
+    private static final int FRONT_RIGHT_SENSOR = 3;
+    private static final int FRONT_LEFT_SENSOR = 1;
     private static final int FRONT_SENSOR_STOP_VALUE = 1000;
-    private static final int RIGHT_SENSOR_STOP_VALUE = 1000;
-    private static final int LEFT_SENSOR_STOP_VALUE = 1000;
+    private static final int FRONT_RIGHT_SENSOR_STOP_VALUE = 1000;
+    private static final int FRONT_LEFT_SENSOR_STOP_VALUE = 1000;
     private static final double ROTATE_RIGHT_VALUE = 82.0D;
     private static final double ROTATE_LEFT_VALUE = -82.0D;
 
@@ -167,8 +167,8 @@ public class Start {
 
         if (USE_THYMIO) {
             if (thymio.getProxHorizontal()[FRONT_SENSOR] >= FRONT_SENSOR_STOP_VALUE ||
-                    thymio.getProxHorizontal()[RIGHT_SENSOR] >= RIGHT_SENSOR_STOP_VALUE ||
-                    thymio.getProxHorizontal()[LEFT_SENSOR] >= LEFT_SENSOR_STOP_VALUE) {
+                    thymio.getProxHorizontal()[FRONT_RIGHT_SENSOR] >= FRONT_RIGHT_SENSOR_STOP_VALUE ||
+                    thymio.getProxHorizontal()[FRONT_LEFT_SENSOR] >= FRONT_LEFT_SENSOR_STOP_VALUE) {
                 thymio.stop();
             } else {
                 thymio.move();
