@@ -2,9 +2,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Created by dennis on 24.05.16.
- */
 // Reference Material:
 // https://en.wikipedia.org/wiki/A*_search_algorithm#Pseudocode
 // http://theory.stanford.edu/~amitp/GameProgramming/Heuristics.html
@@ -25,11 +22,13 @@ public class AStar {
         this.obstacles = obstacles;
     }
 
+    // Returns the shortest path.
     public List<TAction> getPath() {
         runAStar();
         return fastestPath;
     }
 
+    // Executes the A* algorithm.
     private void runAStar() {
         openList = new ArrayList<>();
         closedList = new ArrayList<>();
@@ -73,15 +72,18 @@ public class AStar {
         }
     }
 
+    // Calculates heuristic costs for a given vertex.
+    // Uses Manhattan distance + minimal rotation costs.
     private int calcHeuristicCost(TVertex vertex) {
-        //Manhattan distance + rotation costs
         if(Arrays.equals(vertex.getPosition(), endPosition)) {
             return 0;
         }
 
         boolean isRight = false, isLeft = false, isUp = false, isDown = false, isOnX = false, isOnY = false;
+        // distX and distY are the deltas for the Manhattan distance.
         int distX = vertex.getX() - endPosition[TVertex.POSITION_INDEX_X];
         int distY = vertex.getY() - endPosition[TVertex.POSITION_INDEX_Y];
+        // Finds in which general direction the end position lies.
         if(distX < 0) {
             isRight = true;
         } else if(distX > 0) {
@@ -97,8 +99,9 @@ public class AStar {
             isOnY = true;
         }
 
-        //init rotation costs with worst case cost
+        // Initializes rotation costs with worst case rotation cost.
         int rotationCost = TAction.RIGHT.getCost() * 2;
+        // Compares current orientation with possible directions and sets rotation costs accordingly.
         if(isOnX && isUp) {
             if(vertex.getOrientation() == TOrientation.UP) {
                 rotationCost = 0;
@@ -153,6 +156,7 @@ public class AStar {
         return rotationCost + TAction.MOVE.getCost() * (Math.abs(distX) + Math.abs(distY));
     }
 
+    // Finds all available edges for a given vertex.
     private List<TEdge> findAvailableEdges(TVertex vertex) {
         List<TEdge> edges = new ArrayList<>();
         for(TAction action : TAction.values()) {
@@ -163,6 +167,7 @@ public class AStar {
         return edges;
     }
 
+    // Reconstructs path from end position.
     private void reconstructPath(TVertex vertex) {
         fastestPath = new ArrayList<>();
         while(vertex.getPrevVertex() != null) {
@@ -173,7 +178,7 @@ public class AStar {
             }
             vertex = vertex.getPrevVertex();
         }
-        //inverts list so it is usable in the main method
+        // Inverts list which makes it easier to use in the Start class.
         List<TAction> invertedList = new ArrayList<>();
         for(int i = fastestPath.size(); i > 0; i--) {
             invertedList.add(fastestPath.get(i - 1));
@@ -181,12 +186,14 @@ public class AStar {
         fastestPath = invertedList;
     }
 
+    // Checks if an action at a given vertex is possible.
     private boolean isViableAction(TVertex vertex, TAction action) {
         return action != TAction.MOVE
                 || isInsideBounds(nextPosition(vertex))
                 && !isObstacle(nextPosition(vertex));
     }
 
+    // Checks if a given position is still inside the map bounds.
     private boolean isInsideBounds(int[] position) {
         return position[TVertex.POSITION_INDEX_X] >= Start.MAP_MINIMUM_W_H
                 && position[TVertex.POSITION_INDEX_X] < Start.MAP_WIDTH
@@ -194,6 +201,7 @@ public class AStar {
                 && position[TVertex.POSITION_INDEX_Y] < Start.MAP_HEIGHT;
     }
 
+    // Checks if a given position is an obstacle.
     private boolean isObstacle(int[] position) {
         for(int[] obstacle : obstacles) {
             if(Arrays.equals(position, obstacle)) {
@@ -203,6 +211,7 @@ public class AStar {
         return false;
     }
 
+    // Deduces the destination vertex from a source vertex and the action, which is performed on it.
     private TVertex findDestinationVertex(TVertex sourceVertex, TAction action) {
         TVertex newVertex;
         if(action == TAction.MOVE) {
@@ -225,6 +234,7 @@ public class AStar {
         return newVertex;
     }
 
+    // Finds the next position when performing a MOVE action.
     private int[] nextPosition(TVertex sourceVertex) {
         switch (sourceVertex.getOrientation()) {
             case UP:

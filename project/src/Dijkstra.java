@@ -2,9 +2,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Created by dennis on 24.05.16.
- */
 // Reference Material:
 // http://www.vogella.com/tutorials/JavaAlgorithmsDijkstra/article.html
 // https://en.wikipedia.org/wiki/A*_search_algorithm#Pseudocode
@@ -13,10 +10,10 @@ public class Dijkstra {
     private List<TVertex> closedList;
     private List<TAction> fastestPath;
 
-    private final int[] startPosition;
-    private final TOrientation startOrientation;
-    private final int[] endPosition;
-    private final ArrayList<int[]> obstacles;
+    private int[] startPosition;
+    private TOrientation startOrientation;
+    private int[] endPosition;
+    private ArrayList<int[]> obstacles;
 
     public Dijkstra(int[] startPosition, TOrientation startOrientation, int[] endPosition, ArrayList<int[]> obstacles) {
         this.startPosition = startPosition;
@@ -25,11 +22,13 @@ public class Dijkstra {
         this.obstacles = obstacles;
     }
 
+    // Returns the shortest path.
     public List<TAction> getPath() {
         runDijkstra();
         return fastestPath;
     }
 
+    // Executes the Dijkstra algorithm.
     private void runDijkstra() {
         openList = new ArrayList<>();
         closedList = new ArrayList<>();
@@ -72,6 +71,7 @@ public class Dijkstra {
 
     }
 
+    // Finds all available edges for a given vertex.
     private List<TEdge> findAvailableEdges(TVertex vertex) {
         List<TEdge> edges = new ArrayList<>();
         for(TAction action : TAction.values()) {
@@ -82,6 +82,7 @@ public class Dijkstra {
         return edges;
     }
 
+    // Reconstructs path from end position.
     private void reconstructPath(TVertex vertex) {
         fastestPath = new ArrayList<>();
         while(vertex.getPrevVertex() != null) {
@@ -92,7 +93,7 @@ public class Dijkstra {
             }
             vertex = vertex.getPrevVertex();
         }
-        //inverts list so it is usable in the main method
+        // Inverts list which makes it easier to use in the Start class.
         List<TAction> invertedList = new ArrayList<>();
         for(int i = fastestPath.size(); i > 0; i--) {
             invertedList.add(fastestPath.get(i - 1));
@@ -100,12 +101,14 @@ public class Dijkstra {
         fastestPath = invertedList;
     }
 
+    // Checks if an action at a given vertex is possible.
     private boolean isViableAction(TVertex vertex, TAction action) {
         return action != TAction.MOVE
                 || isInsideBounds(nextPosition(vertex))
                 && !isObstacle(nextPosition(vertex));
     }
 
+    // Checks if a given position is still inside the map bounds.
     private boolean isInsideBounds(int[] position) {
         return position[TVertex.POSITION_INDEX_X] >= Start.MAP_MINIMUM_W_H
                 && position[TVertex.POSITION_INDEX_X] < Start.MAP_WIDTH
@@ -113,6 +116,7 @@ public class Dijkstra {
                 && position[TVertex.POSITION_INDEX_Y] < Start.MAP_HEIGHT;
     }
 
+    // Checks if a given position is an obstacle.
     private boolean isObstacle(int[] position) {
         for(int[] obstacle : obstacles) {
             if(Arrays.equals(position, obstacle)) {
@@ -122,6 +126,7 @@ public class Dijkstra {
         return false;
     }
 
+    // Deduces the destination vertex from a source vertex and the action, which is performed on it.
     private TVertex findDestinationVertex(TVertex sourceVertex, TAction action) {
         TVertex newVertex;
         if(action == TAction.MOVE) {
@@ -144,6 +149,7 @@ public class Dijkstra {
         return newVertex;
     }
 
+    // Finds the next position when performing a MOVE action.
     private int[] nextPosition(TVertex sourceVertex) {
         switch (sourceVertex.getOrientation()) {
             case UP:
