@@ -10,7 +10,7 @@ public class Start {
     private static final long MOVE_SENSITIVY = 3000;
     private static String MAP_FILE_PATH = "map.csv";
     private static boolean USE_ASTAR = true;
-    private static boolean USE_THYMIO = true;
+    private static boolean USE_THYMIO = false;
 
     public static final int MAP_WIDTH = 20;
     public static final int MAP_HEIGHT = 8;
