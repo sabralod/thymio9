@@ -177,8 +177,9 @@ public class Thymio {
 					System.out.println("in !hascorrected");
 				}
 			}
-			
-			drive(100,100);
+
+			// CHANGE FORWARD BIAS HERE
+			drive(96,100);
 			
 			try {
 				Thread.sleep(driveBias);

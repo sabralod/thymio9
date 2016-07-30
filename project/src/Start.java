@@ -7,20 +7,18 @@ import java.util.List;
 
 public class Start {
 
-    private static final long MOVE_SENSITIVY = 3000;
+    private static final String RASPBERRY_IP = "192.168.10.1";
     private static String MAP_FILE_PATH = "map.csv";
     private static boolean USE_ASTAR = true;
-    private static boolean USE_THYMIO = false;
+    private static boolean USE_THYMIO = true;
 
     public static final int MAP_WIDTH = 20;
     public static final int MAP_HEIGHT = 8;
     public static final int MAP_MINIMUM_W_H = 0;
     private static final int FRONT_SENSOR = 2;
     private static final int FRONT_SENSOR_STOP_VALUE = 1000;
-//    private static final double ROTATE_RIGHT_VALUE = 75.0D;
-//    private static final double ROTATE_LEFT_VALUE = -80.0D;
-    private static final double ROTATE_RIGHT_VALUE = 84.0D;
-    private static final double ROTATE_LEFT_VALUE = -90.0D;
+    private static final double ROTATE_RIGHT_VALUE = 82.0D;
+    private static final double ROTATE_LEFT_VALUE = -82.0D;
 
     private Thymio thymio;
     private Map map;
@@ -45,16 +43,6 @@ public class Start {
                     "0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0\n" +
                     "0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0"
             );
-//            obstacles.write(
-//                    "0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0\n" +
-//                    "1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0\n" +
-//                    "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0\n" +
-//                    "0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1\n" +
-//                    "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0\n" +
-//                    "1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0\n" +
-//                    "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0\n" +
-//                    "0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
-//            );
             obstacles.close();
         } catch (IOException e) {
             e.printStackTrace();
@@ -62,8 +50,8 @@ public class Start {
 
         //set start position/orientation + endposition
         startPosition = new double[][]
-                {{1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
@@ -72,8 +60,8 @@ public class Start {
                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
         startOrientation = TOrientation.UP;
         endPosition = new double[][]
-                {{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-                {0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {{0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
@@ -96,9 +84,7 @@ public class Start {
     }
 
     private void initThymio() {
-        thymio = new Thymio("192.168.10.1");
-        //TODO test to find sensible value
-        thymio.setMoveSensitivity(MOVE_SENSITIVY);
+        thymio = new Thymio(RASPBERRY_IP);
     }
 
     private void initMap() {
