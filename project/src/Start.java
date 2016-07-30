@@ -16,7 +16,11 @@ public class Start {
     public static final int MAP_HEIGHT = 8;
     public static final int MAP_MINIMUM_W_H = 0;
     private static final int FRONT_SENSOR = 2;
+    private static final int RIGHT_SENSOR = 3;
+    private static final int LEFT_SENSOR = 1;
     private static final int FRONT_SENSOR_STOP_VALUE = 1000;
+    private static final int RIGHT_SENSOR_STOP_VALUE = 1000;
+    private static final int LEFT_SENSOR_STOP_VALUE = 1000;
     private static final double ROTATE_RIGHT_VALUE = 82.0D;
     private static final double ROTATE_LEFT_VALUE = -82.0D;
 
@@ -107,25 +111,34 @@ public class Start {
                 System.out.println("Action " + i + ": " + path.get(i));
                 switch (path.get(i)) {
                     case MOVE:
-                        shortSleep();
+                        if(!USE_THYMIO) {
+                            shortSleep();
+                        }
                         moveForward();
                         break;
                     case RIGHT:
-                        shortSleep();
+                        if(!USE_THYMIO) {
+                            shortSleep();
+                        }
                         turnRight();
                         break;
                     case LEFT:
-                        shortSleep();
+                        if(!USE_THYMIO) {
+                            shortSleep();
+                        }
                         turnLeft();
                         break;
                     case AROUND:
-                        shortSleep();
+                        if(!USE_THYMIO) {
+                            shortSleep();
+                        }
                         turnAround();
                         break;
                     default:
                         break;
                 }
             }
+            System.out.println("Vertex: Position X: " + getCurrentPosition()[TVertex.POSITION_INDEX_X] + " | Y: " + getCurrentPosition()[TVertex.POSITION_INDEX_Y] + " | Ori: " + orientation);
         }
     }
 
@@ -153,8 +166,9 @@ public class Start {
         map.update();
 
         if (USE_THYMIO) {
-            //TODO maybe add check for white/black fields to keep consistency
-            if (thymio.getProxHorizontal()[FRONT_SENSOR] >= FRONT_SENSOR_STOP_VALUE) {
+            if (thymio.getProxHorizontal()[FRONT_SENSOR] >= FRONT_SENSOR_STOP_VALUE ||
+                    thymio.getProxHorizontal()[RIGHT_SENSOR] >= RIGHT_SENSOR_STOP_VALUE ||
+                    thymio.getProxHorizontal()[LEFT_SENSOR] >= LEFT_SENSOR_STOP_VALUE) {
                 thymio.stop();
             } else {
                 thymio.move();
@@ -181,7 +195,6 @@ public class Start {
         map.update();
 
         if (USE_THYMIO) {
-            //TODO do safety checks
             thymio.rotate(ROTATE_RIGHT_VALUE);
         }
     }
@@ -205,7 +218,6 @@ public class Start {
         map.update();
 
         if (USE_THYMIO) {
-            //TODO do safety checks
             thymio.rotate(ROTATE_LEFT_VALUE);
         }
     }
