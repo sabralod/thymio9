@@ -32,6 +32,7 @@ public class Start {
 
     private List<TAction> path;
 
+    // Initialize Map, Heuristics and Thymio.
     private void initialize() {
         try {
             FileWriter obstacles = new FileWriter(MAP_FILE_PATH);
@@ -85,7 +86,6 @@ public class Start {
         if (USE_THYMIO)
             initThymio();
 
-
         if(USE_ASTAR) {
             AStar aStar = new AStar(getStartPosition(), orientation, getEndPosition(), map.getObstacles());
             path = aStar.getPath();
@@ -95,12 +95,14 @@ public class Start {
         }
     }
 
+    // Initialize thymio.
     private void initThymio() {
         thymio = new Thymio("192.168.10.1");
         //TODO test to find sensible value
         thymio.setMoveSensitivity(MOVE_SENSITIVY);
     }
 
+    // Initialize map.
     private void initMap() {
         map = new Map(MAP_FILE_PATH);
         probs = startPosition.clone();
@@ -111,6 +113,7 @@ public class Start {
         map.update();
     }
 
+    // Run a path with thymio.
     private void runPath() {
         if (path != null) {
             for (int i = 0; i < path.size(); i++) {
@@ -240,29 +243,33 @@ public class Start {
         map.update();
 
         if (USE_THYMIO) {
-            //TODO do safety checks
             thymio.rotate(ROTATE_RIGHT_VALUE * 2);
         }
     }
 
+    // Get current position.
     private int[] getCurrentPosition() {
         return getPosition(probs);
     }
 
+    // Get start position.
     private int[] getStartPosition() {
         return getPosition(startPosition);
     }
 
+    // Get goal position.
     private int[] getEndPosition() {
         return getPosition(endPosition);
     }
 
+    // Main start method.
     public static void main(String[] args) {
         Start start = new Start();
         start.initialize();
         start.runPath();
     }
 
+    // Return the position
     private static int[] getPosition(double[][] position) {
         for (int y = 0; y < position.length; y++) {
             for (int x = 0; x < position[y].length; x++) {
@@ -274,6 +281,7 @@ public class Start {
         return null;
     }
 
+    // Short sleep method for map user interface.
     private static void shortSleep() {
         try {
             Thread.sleep(500);
