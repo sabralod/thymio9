@@ -1,6 +1,3 @@
-/**
- * Created by dennis on 23.06.16.
- */
 public class TEdge {
     private final TVertex sourceVertex;
     private final TVertex destinationVertex;

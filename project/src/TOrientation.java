@@ -1,6 +1,3 @@
-/**
- * Created by dennis on 23.06.16.
- */
 public enum TOrientation {
     UP(0), RIGHT(90), LEFT(-90), DOWN(180);
 
@@ -9,6 +6,7 @@ public enum TOrientation {
     private TOrientation left;
     private TOrientation around;
 
+    // Models the relation between the orientations.
     static {
         UP.right = RIGHT;
         UP.left = LEFT;
@@ -28,6 +26,7 @@ public enum TOrientation {
         this.value = value;
     }
 
+    // Finds the ensuing orientation according to an action.
     public TOrientation nextOrientation(TAction action) {
         switch (action) {
             case MOVE:

@@ -1,8 +1,5 @@
 import java.util.List;
 
-/**
- * Created by dennis on 23.06.16.
- */
 public class TVertex {
     public static final int POSITION_INDEX_Y = 0;
     public static final int POSITION_INDEX_X = 1;
@@ -28,6 +25,7 @@ public class TVertex {
         edges = null;
     }
 
+    // Compares two vertices according to their x-, y- and orientation-value;
     public boolean equals(TVertex vertex) {
         return vertex.y == y && vertex.x == x && vertex.orientation == orientation;
     }
